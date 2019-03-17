@@ -1,6 +1,7 @@
 mod cmd;
 mod config;
 mod error;
+mod sync;
 
 use crate::cmd::*;
 use std::path::PathBuf;
@@ -14,6 +15,8 @@ enum CliCommand {
     Init(InitCmd),
     #[structopt(name = "git")]
     Git(GitCmd),
+    #[structopt(name = "sync")]
+    Sync(SyncCmd),
 }
 
 #[derive(Debug, StructOpt)]
@@ -45,6 +48,7 @@ fn main() -> error::Result<()> {
         CliCommand::Add(a) => a.run(&context, &mut config)?,
         CliCommand::Init(i) => i.run(&context, &mut config)?,
         CliCommand::Git(g) => g.run(&context, &mut config)?,
+        CliCommand::Sync(s) => s.run(&context, &mut config)?,
     }
     config.save(&context.dot_config)?;
     Ok(())
