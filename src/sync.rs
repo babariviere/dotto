@@ -204,10 +204,16 @@ where
     let dst = dst.as_ref();
     if src.is_dir() {
         fs::create_dir_all(dst)?;
+    } else if let Some(parent) = dst.parent() {
+        fs::create_dir_all(parent)?;
     }
     for diff in diffs {
-        let src_path = src.join(diff.path());
-        let dst_path = dst.join(diff.path());
+        let mut src_path = src.to_owned();
+        let mut dst_path = dst.to_owned();
+        if diff.path().parent().is_some() {
+            src_path = src_path.join(diff.path());
+            dst_path = dst_path.join(diff.path());
+        }
         match diff.kind() {
             DiffKind::Modified => {
                 fs::copy(src_path, dst_path)?;
