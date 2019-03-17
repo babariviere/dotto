@@ -77,20 +77,6 @@ impl FileType {
         }
     }
 
-    fn is_dir(&self) -> bool {
-        match self {
-            FileType::Dir => true,
-            _ => false,
-        }
-    }
-
-    fn is_file(&self) -> bool {
-        match self {
-            FileType::File => true,
-            _ => false,
-        }
-    }
-
     fn exists(&self) -> bool {
         match self {
             FileType::None => false,
@@ -207,15 +193,14 @@ where
 }
 
 // One way sync from src to dst
-pub fn sync<A, B>(src: A, dst: B) -> Result<Vec<Diff>>
+pub fn sync<A, B>(src: A, dst: B, diffs: &[Diff]) -> Result<()>
 where
     A: AsRef<Path>,
     B: AsRef<Path>,
 {
     let src = src.as_ref();
     let dst = dst.as_ref();
-    let diffs = sync_diff(src, dst)?;
-    for diff in &diffs {
+    for diff in diffs {
         let src_path = src.join(diff.path());
         let dst_path = dst.join(diff.path());
         match diff.kind() {
@@ -238,5 +223,5 @@ where
             }
         }
     }
-    return Ok(diffs);
+    return Ok(());
 }

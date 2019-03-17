@@ -10,7 +10,7 @@ pub struct GitCmd {
 }
 
 impl Command for GitCmd {
-    fn run(&self, ctx: &Context, config: &mut Config) -> Result<()> {
+    fn run(&self, _ctx: &Context, _config: &mut Config) -> Result<()> {
         unimplemented!()
     }
 }

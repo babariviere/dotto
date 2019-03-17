@@ -1,9 +1,11 @@
 mod add;
+mod edit;
 mod git;
 mod init;
 mod sync;
 
 pub use self::add::*;
+pub use self::edit::*;
 pub use self::git::*;
 pub use self::init::*;
 pub use self::sync::*;
