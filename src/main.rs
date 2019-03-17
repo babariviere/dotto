@@ -14,18 +14,21 @@ enum CliCommand {
     /// Add file(s) to dot index
     #[structopt(name = "add")]
     Add(AddCmd),
+    /// Open config in your editor ($EDITOR by default)
+    #[structopt(name = "edit")]
+    Edit(EditCmd),
+    /// Run git in dot context
+    #[structopt(
+        name = "git",
+        raw(setting = "structopt::clap::AppSettings::AllowExternalSubcommands")
+    )]
+    Git(GitCmd),
     /// Initialize dot configuration and folder
     #[structopt(name = "init")]
     Init(InitCmd),
     /// Install config files (warning: can delete files on system)
     #[structopt(name = "install")]
     Install(InstallCmd),
-    /// Open config in your editor ($EDITOR by default)
-    #[structopt(name = "edit")]
-    Edit(EditCmd),
-    /// Launch git command from dot directory
-    #[structopt(name = "git")]
-    Git(GitCmd),
     /// Synchronize folders (only for testing)
     #[structopt(name = "sync")]
     Sync(SyncCmd),
@@ -64,10 +67,10 @@ fn main() -> error::Result<()> {
     };
     match args.command {
         CliCommand::Add(a) => a.run(&context, &mut config)?,
-        CliCommand::Init(i) => i.run(&context, &mut config)?,
-        CliCommand::Install(i) => i.run(&context, &mut config)?,
         CliCommand::Edit(e) => e.run(&context, &mut config)?,
         CliCommand::Git(g) => g.run(&context, &mut config)?,
+        CliCommand::Init(i) => i.run(&context, &mut config)?,
+        CliCommand::Install(i) => i.run(&context, &mut config)?,
         CliCommand::Sync(s) => s.run(&context, &mut config)?,
         CliCommand::Update(u) => u.run(&context, &mut config)?,
     }
