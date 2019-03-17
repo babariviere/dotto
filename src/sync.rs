@@ -192,6 +192,8 @@ where
     return sync_diff_rec(src, dst, "");
 }
 
+// TODO: add option for progress
+
 // One way sync from src to dst
 pub fn sync<A, B>(src: A, dst: B, diffs: &[Diff]) -> Result<()>
 where
@@ -200,6 +202,9 @@ where
 {
     let src = src.as_ref();
     let dst = dst.as_ref();
+    if src.is_dir() {
+        fs::create_dir_all(dst)?;
+    }
     for diff in diffs {
         let src_path = src.join(diff.path());
         let dst_path = dst.join(diff.path());
@@ -209,7 +214,7 @@ where
             }
             DiffKind::Added => {
                 if src_path.is_dir() {
-                    fs::create_dir(dst_path)?;
+                    fs::create_dir_all(dst_path)?;
                 } else {
                     fs::copy(src_path, dst_path)?;
                 }

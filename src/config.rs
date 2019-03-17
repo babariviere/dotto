@@ -8,7 +8,7 @@ fn bool_is_false(b: &bool) -> bool {
     !*b
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Location {
     Home,
@@ -17,20 +17,20 @@ pub enum Location {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct File {
-    path: PathBuf,
-    location: Location,
+pub struct File {
+    pub path: PathBuf,
+    pub location: Location,
     #[serde(skip_serializing_if = "bool_is_false", default)]
-    recursive: bool,
+    pub recursive: bool,
     #[serde(skip_serializing_if = "bool_is_false", default)]
-    symbolic: bool,
+    pub symbolic: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
-    files: Vec<File>,
-    git: Option<PathBuf>,
-    dot: Option<PathBuf>,
+    pub files: Vec<File>,
+    pub git: Option<PathBuf>,
+    pub dot: Option<PathBuf>,
 }
 
 impl Config {
@@ -51,7 +51,6 @@ impl Config {
         recursive: bool,
     ) -> Result<()> {
         let path: &Path = path.as_ref();
-        println!("{}", path.display());
         let abs = path_abs::PathAbs::new(path)?;
         let path = abs.as_path();
         let (path, loc) = ctx.clean_path(path);
@@ -111,6 +110,14 @@ impl Context {
             return (p.to_owned(), Location::Home);
         }
         return (path.to_owned(), Location::Absolute);
+    }
+
+    pub fn get_path(&self, loc: &Location) -> PathBuf {
+        match loc {
+            Location::Home => self.home.to_owned(),
+            Location::Config => self.xdg_config.to_owned(),
+            Location::Absolute => PathBuf::from("/"),
+        }
     }
 }
 

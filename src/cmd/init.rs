@@ -30,6 +30,7 @@ impl Command for InitCmd {
                 .arg(ctx.dot.display().to_string())
                 .arg("init")
                 .status()?;
+            config.git = Some(ctx.dot.join(".git"));
         }
         Ok(())
     }

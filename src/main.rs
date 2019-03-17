@@ -7,7 +7,7 @@ use crate::cmd::*;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-// TODO: install and update
+// TODO: clean command to remove deleted projects / delete command
 
 #[derive(Debug, StructOpt)]
 enum CliCommand {
@@ -17,6 +17,9 @@ enum CliCommand {
     /// Initialize dot configuration and folder
     #[structopt(name = "init")]
     Init(InitCmd),
+    /// Install config files (warning: can delete files on system)
+    #[structopt(name = "install")]
+    Install(InstallCmd),
     /// Open config in your editor ($EDITOR by default)
     #[structopt(name = "edit")]
     Edit(EditCmd),
@@ -26,6 +29,9 @@ enum CliCommand {
     /// Synchronize folders (only for testing)
     #[structopt(name = "sync")]
     Sync(SyncCmd),
+    /// Update dot directory with new changes
+    #[structopt(name = "update")]
+    Update(UpdateCmd),
 }
 
 /// Dotfiles manager
@@ -59,9 +65,11 @@ fn main() -> error::Result<()> {
     match args.command {
         CliCommand::Add(a) => a.run(&context, &mut config)?,
         CliCommand::Init(i) => i.run(&context, &mut config)?,
+        CliCommand::Install(i) => i.run(&context, &mut config)?,
         CliCommand::Edit(e) => e.run(&context, &mut config)?,
         CliCommand::Git(g) => g.run(&context, &mut config)?,
         CliCommand::Sync(s) => s.run(&context, &mut config)?,
+        CliCommand::Update(u) => u.run(&context, &mut config)?,
     }
     config.save(&context.dot_config)?;
     Ok(())
