@@ -16,6 +16,10 @@ pub enum Location {
     Absolute,
 }
 
+// TODO: allow rename
+// TODO: fix recursive not taken into account
+// TODO: add exclude to hide secret files
+// TODO: add whitelist and blacklist
 #[derive(Debug, Deserialize, Serialize)]
 pub struct File {
     pub path: PathBuf,
@@ -27,9 +31,15 @@ pub struct File {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct Git {
+    pub path: PathBuf,
+    pub location: Location,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub files: Vec<File>,
-    pub git: Option<PathBuf>,
+    git: Option<Git>,
     pub dot: Option<PathBuf>,
 }
 
@@ -70,8 +80,18 @@ impl Config {
         Ok(())
     }
 
-    pub fn set_git_dir<P: AsRef<Path>>(&mut self, path: P) {
-        self.git.replace(path.as_ref().to_owned());
+    pub fn git_dir(&self, ctx: &Context) -> Option<PathBuf> {
+        self.git.as_ref().map(|g| {
+                ctx.get_path(&g.location).join(&g.path)
+        })
+    }
+
+    pub fn set_git_dir<P: AsRef<Path>>(&mut self, ctx: &Context, path: P) {
+        let (path, loc) = ctx.clean_path(path.as_ref());
+        self.git.replace(Git{
+            path,
+            location: loc,
+        });
     }
 }
 

@@ -193,6 +193,7 @@ where
 }
 
 // TODO: add option for progress
+// TODO: support symlink
 
 // One way sync from src to dst
 pub fn sync<A, B>(src: A, dst: B, diffs: &[Diff]) -> Result<()>

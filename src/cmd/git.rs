@@ -9,7 +9,7 @@ pub struct GitCmd {}
 
 impl Command for GitCmd {
     fn run(&self, ctx: &Context, config: &mut Config) -> Result<()> {
-        let git_dir = match &config.git {
+        let git_dir = match config.git_dir(ctx) {
             Some(g) => g,
             None => return Err(crate::error::DotError::NoGitDir.into()),
         };

@@ -51,10 +51,12 @@ impl Command for UpdateCmd {
                 println!("==> updating {}", dst_root.display());
                 sync::sync(src_root, dst_root, &sctx.diffs)?;
             }
-            if let Some(git) = &config.git {
+            if let Some(git) = config.git_dir(ctx).as_ref() {
                 let mut message = String::new();
                 for sctx in &sync_ctx {
                     for diff in &sctx.diffs {
+                        // TODO: do not join when root is file
+                        // maybe we should a small function to manage this case?
                         message.push_str(&format!(
                             "- {} {}\n",
                             diff.kind(),

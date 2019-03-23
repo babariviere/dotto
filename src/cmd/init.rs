@@ -22,7 +22,7 @@ impl Command for InitCmd {
         println!("==> creating {}", ctx.dot.display());
         std::fs::create_dir_all(&ctx.dot)?;
         if let Some(gd) = &self.git_dir {
-            config.set_git_dir(gd);
+            config.set_git_dir(ctx, gd);
         } else if self.git {
             println!("==> initializing git directory");
             process::Command::new("git")
@@ -30,7 +30,7 @@ impl Command for InitCmd {
                 .arg(ctx.dot.display().to_string())
                 .arg("init")
                 .status()?;
-            config.git = Some(ctx.dot.join(".git"));
+            config.set_git_dir(ctx, ctx.dot.join(".git"));
         }
         Ok(())
     }

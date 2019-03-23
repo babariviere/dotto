@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 // TODO: clean command to remove deleted projects / delete command
+// TODO: add status command to get all diff and all
 
 #[derive(Debug, StructOpt)]
 enum CliCommand {
