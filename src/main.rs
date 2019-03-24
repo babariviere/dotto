@@ -18,6 +18,9 @@ enum CliCommand {
     /// Open config in your editor ($EDITOR by default)
     #[structopt(name = "edit")]
     Edit(EditCmd),
+    /// Exclude files (glob style: e.g src/**/*.rs) from install and update
+    #[structopt(name = "exclude")]
+    Exclude(ExcludeCmd),
     /// Run git in dot context
     #[structopt(
         name = "git",
@@ -30,9 +33,6 @@ enum CliCommand {
     /// Install config files (warning: can delete files on system)
     #[structopt(name = "install")]
     Install(InstallCmd),
-    /// Synchronize folders (only for testing)
-    #[structopt(name = "sync")]
-    Sync(SyncCmd),
     /// Update dot directory with new changes
     #[structopt(name = "update")]
     Update(UpdateCmd),
@@ -69,10 +69,10 @@ fn main() -> error::Result<()> {
     match args.command {
         CliCommand::Add(a) => a.run(&context, &mut config)?,
         CliCommand::Edit(e) => e.run(&context, &mut config)?,
+        CliCommand::Exclude(e) => e.run(&context, &mut config)?,
         CliCommand::Git(g) => g.run(&context, &mut config)?,
         CliCommand::Init(i) => i.run(&context, &mut config)?,
         CliCommand::Install(i) => i.run(&context, &mut config)?,
-        CliCommand::Sync(s) => s.run(&context, &mut config)?,
         CliCommand::Update(u) => u.run(&context, &mut config)?,
     }
     config.save(&context.dot_config)?;

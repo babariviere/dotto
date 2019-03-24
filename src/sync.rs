@@ -1,6 +1,6 @@
 //! Implements one way synchronisation
 
-use crate::error::Result;
+use crate::error::{DotError, Result};
 use std::collections::HashSet;
 use std::fmt;
 use std::fs::{self, DirEntry, File};
@@ -85,6 +85,49 @@ impl FileType {
     }
 }
 
+#[derive(Debug)]
+pub struct SyncSettings {
+    pub depth: usize,
+    pub recursive: bool,
+    pub exclude: Vec<glob::Pattern>,
+}
+
+impl SyncSettings {
+    // TODO: String -> AsRef<str>
+    pub fn new(mut depth: usize, recursive: bool, exclude: &[String]) -> Result<SyncSettings> {
+        if depth == 0 {
+            depth = 1;
+        }
+        Ok(SyncSettings {
+            depth,
+            recursive,
+            exclude: exclude
+                .iter()
+                .map(|s| glob::Pattern::new(s).map_err(|e| DotError::wrap(s, e)))
+                .collect::<std::result::Result<Vec<glob::Pattern>, _>>()?,
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+struct SyncContext<'a> {
+    current_depth: usize,
+    settings: &'a SyncSettings,
+}
+
+impl SyncContext<'_> {
+    fn deeper(&self) -> SyncContext<'_> {
+        SyncContext {
+            current_depth: self.current_depth + 1,
+            settings: self.settings,
+        }
+    }
+
+    fn too_deep(&self) -> bool {
+        self.current_depth >= self.settings.depth && !self.settings.recursive
+    }
+}
+
 fn checksum<A, B>(src: A, dst: B) -> Result<bool>
 where
     A: AsRef<Path>,
@@ -103,13 +146,16 @@ where
     Ok(sumsrc == sumdst)
 }
 
-fn sync_diff_rec<A, B, C>(src_root: A, dst_root: B, file: C) -> Result<Vec<Diff>>
+fn sync_diff_rec<A, B, C>(ctx: SyncContext, src_root: A, dst_root: B, file: C) -> Result<Vec<Diff>>
 where
     A: AsRef<Path>,
     B: AsRef<Path>,
     C: AsRef<Path>,
 {
     let mut diffs = Vec::new();
+    if ctx.too_deep() {
+        return Ok(diffs);
+    }
     let file: &Path = file.as_ref();
     let src_root = src_root.as_ref();
     let dst_root = dst_root.as_ref();
@@ -141,16 +187,24 @@ where
             diffs.push(Diff::new(file, DiffKind::Added));
             for entry in src.read_dir()? {
                 let entry: DirEntry = entry?;
-                let entry_diffs =
-                    sync_diff_rec(&src_root, &dst_root, file.join(entry.file_name()))?;
+                let entry_diffs = sync_diff_rec(
+                    ctx.deeper(),
+                    &src_root,
+                    &dst_root,
+                    file.join(entry.file_name()),
+                )?;
                 diffs.extend(entry_diffs.into_iter());
             }
         }
         (FileType::File, FileType::Dir) | (FileType::None, FileType::Dir) => {
             for entry in dst.read_dir()? {
                 let entry: DirEntry = entry?;
-                let entry_diffs =
-                    sync_diff_rec(&src_root, &dst_root, file.join(entry.file_name()))?;
+                let entry_diffs = sync_diff_rec(
+                    ctx.deeper(),
+                    &src_root,
+                    &dst_root,
+                    file.join(entry.file_name()),
+                )?;
                 diffs.extend(entry_diffs.into_iter());
             }
             diffs.push(Diff::new(file, DiffKind::Deleted));
@@ -167,7 +221,7 @@ where
                 .map(|f| f.map(|f| hash_set.insert(file.join(f.file_name()))))
                 .collect::<std::io::Result<Vec<_>>>()?;
             for file in hash_set {
-                let entry_diffs = sync_diff_rec(&src_root, &dst_root, file)?;
+                let entry_diffs = sync_diff_rec(ctx.deeper(), &src_root, &dst_root, file)?;
                 diffs.extend(entry_diffs.into_iter());
             }
         }
@@ -179,7 +233,7 @@ where
 
 // Compute diff between two folders
 // Returned path will be relative
-pub fn sync_diff<A, B>(src: A, dst: B) -> Result<Vec<Diff>>
+pub fn sync_diff<A, B>(src: A, dst: B, settings: &SyncSettings) -> Result<Vec<Diff>>
 where
     A: AsRef<Path>,
     B: AsRef<Path>,
@@ -189,7 +243,15 @@ where
     if !src.exists() {
         return Err(io::Error::from(io::ErrorKind::NotFound).into());
     }
-    return sync_diff_rec(src, dst, "");
+    let ctx = SyncContext {
+        current_depth: 0,
+        settings,
+    };
+    let mut diffs = sync_diff_rec(ctx, src, dst, "")?;
+    for exclude in &settings.exclude {
+        diffs.retain(|p| !exclude.matches_path(&p.path));
+    }
+    Ok(diffs)
 }
 
 // TODO: add option for progress

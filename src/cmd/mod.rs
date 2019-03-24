@@ -1,17 +1,17 @@
 mod add;
 mod edit;
+mod exclude;
 mod git;
 mod init;
 mod install;
-mod sync;
 mod update;
 
 pub use self::add::*;
 pub use self::edit::*;
+pub use self::exclude::*;
 pub use self::git::*;
 pub use self::init::*;
 pub use self::install::*;
-pub use self::sync::*;
 pub use self::update::*;
 
 use crate::config::{Config, Context, Location};

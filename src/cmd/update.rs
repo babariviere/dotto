@@ -1,7 +1,7 @@
 use super::{Command, SyncContext};
 use crate::config::{Config, Context};
 use crate::error::Result;
-use crate::sync;
+use crate::sync::{self, SyncSettings};
 use std::io::{self, Read, Write};
 use std::process;
 use structopt::StructOpt;
@@ -15,7 +15,11 @@ impl Command for UpdateCmd {
         for file in &config.files {
             let src_root = ctx.get_path(&file.location).join(&file.path);
             let dst_root = ctx.dot.join(&file.path);
-            let file_diffs = sync::sync_diff(src_root, &dst_root)?;
+            let file_diffs = sync::sync_diff(
+                src_root,
+                &dst_root,
+                &SyncSettings::new(0, file.recursive, file.exclude.as_slice())?,
+            )?;
             if file_diffs.is_empty() {
                 continue;
             }
