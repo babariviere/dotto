@@ -1,6 +1,7 @@
 mod cmd;
 mod config;
 mod error;
+mod storage;
 mod sync;
 
 use crate::cmd::*;

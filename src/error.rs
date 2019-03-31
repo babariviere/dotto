@@ -11,6 +11,12 @@ pub enum DotError {
     Wrap { msg: String, error: Error },
     #[fail(display = "no file have matched for path {}", 0)]
     NoMatch(String),
+    #[fail(display = "cannot checksum directory")]
+    ChecksumDir,
+    #[fail(display = "path {} does not exists", 0)]
+    NotFound(String),
+    #[fail(display = "cannot copy different file type")]
+    InvalidCopy,
 }
 
 impl DotError {

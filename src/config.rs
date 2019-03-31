@@ -51,7 +51,6 @@ impl Config {
         serde_yaml::from_reader(&mut file).map_err(failure::Error::from)
     }
 
-    // TODO: add to git
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         let mut file = fs::File::create(path)?;
         serde_yaml::to_writer(&mut file, self).map_err(failure::Error::from)
