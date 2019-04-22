@@ -41,7 +41,7 @@ enum CliCommand {
 
 /// Dotfiles manager
 #[derive(Debug, StructOpt)]
-#[structopt(name = "dot")]
+#[structopt(name = "dotto")]
 struct Cli {
     /// Path to dot config file, use $DOT_PATH/config.yml by default
     #[structopt(name = "config", short = "c", long = "config", parse(from_os_str))]

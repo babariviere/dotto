@@ -1,2 +1,2 @@
-# dot
+# dotto
 Tool to manage dotfiles
