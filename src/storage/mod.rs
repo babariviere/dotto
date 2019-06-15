@@ -38,6 +38,15 @@ impl From<&str> for VPath {
     }
 }
 
+impl From<&String> for VPath {
+    fn from(v: &String) -> Self {
+        VPath {
+            root: v.starts_with('/'),
+            path: v.to_owned(),
+        }
+    }
+}
+
 impl From<path::PathBuf> for VPath {
     fn from(p: path::PathBuf) -> Self {
         VPath {
@@ -180,6 +189,7 @@ pub trait Storage {
 
 #[cfg(test)]
 pub mod tests {
+    #![allow(unused_must_use)]
     use super::*;
 
     use std::io::{Read, Write};
@@ -213,4 +223,53 @@ pub mod tests {
         assert!(file_ref.read_to_string(&mut buf).is_ok());
         assert_eq!(content, buf);
     }
+
+    /// Test storage removing capacity
+    pub fn remove<S: Storage>(storage: &mut S) {
+        let entry_a = Entry::new_file("a");
+        let entry_b = Entry::new_dir("b");
+        let entry_c = Entry::new_dir("b/c");
+        storage.create(&entry_a);
+        storage.create(&entry_b);
+        storage.create(&entry_c);
+
+        assert!(storage.remove(entry_a).is_ok());
+        assert!(storage.remove(&entry_b).is_err());
+        assert!(storage.remove(entry_c).is_ok());
+        assert!(storage.remove(entry_b).is_ok());
+    }
+
+    /// Test storage copying capacity
+    pub fn copy<S: Storage>(storage: &mut S) {
+        let entry_a = Entry::new_file("a");
+        let entry_b = Entry::new_file("b");
+        storage.create(&entry_a);
+
+        let buf = "hello world";
+        let mut f = storage.open(&entry_a).unwrap();
+        f.write(buf.as_bytes()).unwrap();
+        assert!(storage.copy(&entry_a, &entry_b).is_ok());
+        let mut f = storage.open(&entry_b).unwrap();
+        let mut readed = String::new();
+        f.read_to_string(&mut readed).unwrap();
+        assert_eq!(buf, readed);
+    }
+
+    /// Test storage listing capacity
+    pub fn list<S: Storage>(storage: &mut S) {
+        let entry_a = Entry::new_file("a");
+        let entry_b = Entry::new_dir("b");
+        let entry_c = Entry::new_dir("c");
+        storage.create(&entry_a);
+        storage.create(&entry_b);
+        storage.create(&entry_c);
+
+        let root = Entry::new_dir("/");
+        let res = storage.list(&root);
+        assert!(res.is_ok());
+        let mut res = res.unwrap();
+        res.sort();
+        assert_eq!(res, vec![entry_a, entry_b, entry_c]);
+    }
+
 }

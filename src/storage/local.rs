@@ -23,10 +23,20 @@ impl Local {
     }
 }
 
+impl VFile for std::fs::File {}
+
 impl Storage for Local {
     fn open<E: AsRef<Entry>>(&mut self, entry: E) -> Result<Box<dyn VFile>> {
-        let _entry = entry.as_ref();
-        unimplemented!()
+        let entry = entry.as_ref();
+        if entry.kind() != EntryKind::File {
+            return Err(Error::NotAFile(entry.path().clone()));
+        }
+        let f = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(self.path(entry))
+            .map_err(|err| Error::from_io(err, entry.path().clone()))?;
+        Ok(Box::new(f))
     }
 
     fn create<E: AsRef<Entry>>(&mut self, entry: E) -> Result<()> {
@@ -80,8 +90,6 @@ impl Storage for Local {
 
     fn list<E: AsRef<Entry>>(&self, entry: E) -> Result<Vec<Entry>> {
         let entry = entry.as_ref();
-        println!("{:?}", entry);
-        println!("{:?}", self.path(entry));
         match entry.kind() {
             EntryKind::File => {
                 return Ok(vec![entry.clone()]);
@@ -111,21 +119,50 @@ impl Storage for Local {
 
 #[cfg(test)]
 pub mod tests {
+    #![allow(unused_must_use)]
     use super::Local;
     use crate::storage::tests::*;
 
     const PATH_PREFIX: &str = "/tmp/dotto_test_storage_local";
 
+    fn run_test<F: Fn(&mut Local)>(name: &str, f: F) {
+        let path = format!("{}/{}", PATH_PREFIX, name);
+        // asserts files are deleted
+        std::fs::remove_dir_all(&path);
+        std::fs::create_dir_all(&path);
+        let mut local = Local::new(&path);
+        f(&mut local);
+        std::fs::remove_dir_all(&path);
+    }
+
     /// Test storage creation capability
     #[test]
     pub fn test_create() {
-        std::fs::create_dir_all(PATH_PREFIX);
-        let mut local = Local::new(PATH_PREFIX);
-        create(&mut local);
-        std::fs::remove_dir_all(PATH_PREFIX);
+        run_test("create", create);
     }
 
     /// Test storage opening capacity
+    #[test]
+    pub fn test_open() {
+        run_test("open", open);
+    }
 
-    pub fn test_open() {}
+    /// Test storage removing capacity
+    #[test]
+    pub fn test_remove() {
+        run_test("remove", remove);
+    }
+
+    /// Test storage copying capacity
+    #[test]
+    pub fn test_copy() {
+        run_test("copy", copy);
+    }
+
+    /// Test storage listing capacity
+    #[test]
+    pub fn test_list() {
+        run_test("list", list);
+    }
+
 }
