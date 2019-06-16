@@ -1,7 +1,11 @@
 pub mod local;
 
+use failure::Fail;
+use std::fmt;
 use std::io::{Read, Write};
 use std::path;
+
+// TODO: remove .. in path
 
 /// A virtual path in storage.
 #[derive(Clone, Debug, Eq, PartialOrd, PartialEq, Ord)]
@@ -26,6 +30,12 @@ impl VPath {
         }
         new.path.extend(rhs.path.chars());
         new
+    }
+}
+
+impl fmt::Display for VPath {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.path.fmt(f)
     }
 }
 
@@ -86,6 +96,15 @@ pub enum EntryKind {
     Dir,
 }
 
+impl fmt::Display for EntryKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EntryKind::File => write!(f, "file"),
+            EntryKind::Dir => write!(f, "dir"),
+        }
+    }
+}
+
 /// File entry in storage
 #[derive(Clone, Debug, Eq, PartialOrd, PartialEq, Ord)]
 pub struct Entry {
@@ -140,17 +159,21 @@ impl AsRef<VPath> for Entry {
 pub trait VFile: Read + Write {}
 
 /// List of all errors that can be returned by Storage.
-#[derive(Debug)]
+#[derive(Debug, Fail)]
 pub enum Error {
+    #[fail(display = "file not found {}", _0)]
     /// File is not found
     NotFound(VPath),
+    #[fail(display = "{} is not a file", _0)]
     /// Not a file
     NotAFile(VPath),
+    #[fail(display = "invalid copy from type {} to type {}", _0, _1)]
     /// Invalid copy
     InvalidCopy(EntryKind, EntryKind),
 
+    #[fail(display = "{}: {}", _1, _0)]
     /// std::io error
-    Io(std::io::Error, VPath),
+    Io(#[fail(cause)] std::io::Error, VPath),
 }
 
 impl Error {
