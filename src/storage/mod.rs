@@ -5,8 +5,6 @@ use std::fmt;
 use std::io::{Read, Write};
 use std::path;
 
-// TODO: remove .. in path
-
 /// A virtual path in storage.
 #[derive(Clone, Debug, Eq, PartialOrd, PartialEq, Ord)]
 pub struct VPath {
@@ -15,6 +13,29 @@ pub struct VPath {
 }
 
 impl VPath {
+    /// create a new VPath from str
+    pub fn new<S: AsRef<str>>(path: S) -> VPath {
+        let path = path.as_ref();
+        let root = path.starts_with('/');
+        let mut parts = Vec::new();
+        for p in path.split('/') {
+            match p {
+                "." => {}
+                ".." => {
+                    parts.pop();
+                }
+                p => {
+                    parts.push(p);
+                }
+            }
+        }
+        let mut path = parts.join("/");
+        if root {
+            path = format!("/{}", path);
+        }
+        VPath { root, path }
+    }
+
     /// create a system path from VPath
     fn system_path(&self) -> path::PathBuf {
         path::Path::new(&self.path).to_owned()
@@ -41,37 +62,25 @@ impl fmt::Display for VPath {
 
 impl From<&str> for VPath {
     fn from(v: &str) -> Self {
-        VPath {
-            root: v.starts_with('/'),
-            path: v.to_owned(),
-        }
+        VPath::new(v)
     }
 }
 
 impl From<&String> for VPath {
     fn from(v: &String) -> Self {
-        VPath {
-            root: v.starts_with('/'),
-            path: v.to_owned(),
-        }
+        VPath::new(v)
     }
 }
 
 impl From<path::PathBuf> for VPath {
     fn from(p: path::PathBuf) -> Self {
-        VPath {
-            root: p.is_absolute(),
-            path: p.display().to_string(),
-        }
+        VPath::new(p.display().to_string())
     }
 }
 
 impl From<&path::Path> for VPath {
     fn from(p: &path::Path) -> Self {
-        VPath {
-            root: p.is_absolute(),
-            path: p.display().to_string(),
-        }
+        VPath::new(p.display().to_string())
     }
 }
 
@@ -216,6 +225,13 @@ pub mod tests {
     use super::*;
 
     use std::io::{Read, Write};
+
+    #[test]
+    fn test_vpath() {
+        let path = "../../abc/def/ghi/../../.";
+        let vpath = VPath::new(path);
+        assert_eq!(vpath.path, "abc");
+    }
 
     /// Test storage creation capability
     pub fn create<S: Storage>(storage: &mut S) {
